@@ -1,10 +1,8 @@
-
-// components/admin/Controls.tsx
 'use client';
 
 import { useState } from 'react';
 import { db } from '@/lib/firebase';
-import { doc, updateDoc, collection, getDocs, writeBatch } from 'firebase/firestore';
+import { doc, updateDoc, setDoc, collection, getDocs, writeBatch } from 'firebase/firestore';
 import type { Activity } from '@/types';
 
 interface ControlsProps {
@@ -13,6 +11,23 @@ interface ControlsProps {
 
 export default function Controls({ activity }: ControlsProps) {
   const [isLoading, setIsLoading] = useState(false);
+
+  const initializeActivity = async () => {
+    setIsLoading(true);
+    try {
+      // Try to create the activity document
+      await setDoc(doc(db, 'activities', 'current'), {
+        status: 'registration',
+        currentRound: 1,
+        timestamp: new Date()
+      });
+    } catch (error) {
+      console.error('Error creating activity:', error);
+      alert('Error creating activity');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const updateActivityStatus = async (newStatus: Activity['status'], currentRound = 1) => {
     setIsLoading(true);
@@ -33,26 +48,53 @@ export default function Controls({ activity }: ControlsProps) {
   const randomizeGroups = async () => {
     setIsLoading(true);
     try {
+      console.log('Starting group randomization...');
+      
       const usersSnap = await getDocs(collection(db, 'users'));
-      const registeredUsers = usersSnap.docs.filter(doc => 
-        doc.data().registered && doc.data().role === 'student'
-      );
-
+      const registeredUsers = usersSnap.docs.filter(doc => {
+        const userData = doc.data();
+        return userData.role === 'student'; // Changed this condition
+      });
+      
+      console.log('Found registered users:', registeredUsers.length);
+  
       const batch = writeBatch(db);
       registeredUsers.forEach((userDoc, index) => {
         const group = index % 2 === 0 ? 'A' : 'B';
-        batch.update(doc(db, 'users', userDoc.id), { group });
+        const userData = userDoc.data();
+        console.log(`Assigning user ${userDoc.id} to group ${group}`, {
+          currentData: userData
+        });
+        
+        // Update the entire user document to ensure consistency
+        batch.set(doc(db, 'users', userDoc.id), { 
+          ...userData,
+          group,
+          registered: true,
+          role: 'student',
+          timestamp: new Date(),
+          submissionId: null
+        }, { merge: true });
       });
-
+  
+      console.log('Committing batch updates...');
       await batch.commit();
+      console.log('Batch commit completed');
+  
+      // Double-check the update
+      const verifyUser = await getDoc(doc(db, 'users', registeredUsers[0].id));
+      console.log('Verified user update:', verifyUser.data());
+      
       await updateActivityStatus('instructions');
+      console.log('Activity status updated to instructions');
     } catch (error) {
-      console.error('Error randomizing groups:', error);
+      console.error('Error in randomizeGroups:', error);
       alert('Error assigning groups');
     } finally {
       setIsLoading(false);
     }
   };
+
 
   const resetActivity = async () => {
     if (!confirm('Are you sure you want to reset the activity? This will delete all submissions and reviews.')) {
@@ -115,6 +157,16 @@ export default function Controls({ activity }: ControlsProps) {
         </div>
 
         <div className="space-x-4">
+          {!activity?.status && (
+            <button
+              onClick={initializeActivity}
+              disabled={isLoading}
+              className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 disabled:opacity-50"
+            >
+              Start Activity
+            </button>
+          )}
+
           {activity?.status === 'registration' && (
             <button
               onClick={randomizeGroups}

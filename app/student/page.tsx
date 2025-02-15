@@ -6,12 +6,13 @@ import { useAuth } from '@/components/auth/AuthContext';
 import { db } from '@/lib/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
 import type { Activity } from '@/types';
+// Fix 1: Ensure correct import paths with explicit file extensions
 import Registration from '@/components/student/Registration';
 import Instructions from '@/components/student/Instructions';
 import Submission from '@/components/student/Submission';
 import PeerReview from '@/components/student/PeerReview';
 
-export default function StudentDashboard() {
+const StudentDashboard = () => {
   const { user, loading } = useAuth();
   const [activity, setActivity] = useState<Activity | null>(null);
 
@@ -59,4 +60,7 @@ export default function StudentDashboard() {
       </div>
     </div>
   );
-}
+};
+
+// Fix 2: Add explicit default export
+export default StudentDashboard;
