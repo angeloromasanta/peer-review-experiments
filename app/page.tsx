@@ -21,12 +21,11 @@ export default function Home() {
       // Sign in anonymously
       const { user } = await signInAnonymously(auth);
 
-      // Save user data to Firestore with registered flag set to true
+      // Save user data to Firestore
       await setDoc(doc(db, 'users', user.uid), {
         name,
         email,
         role: 'student',
-        registered: true,
         timestamp: new Date()
       });
 

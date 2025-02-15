@@ -7,9 +7,11 @@ import { db } from '@/lib/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
 import type { Activity } from '@/types';
 
+import Registration from '@/components/student/Registration';
 import Instructions from '@/components/student/Instructions';
 import Submission from '@/components/student/Submission';
 import PeerReview from '@/components/student/PeerReview';
+
 
 const StudentDashboard = () => {
   const { user, loading } = useAuth();
@@ -34,7 +36,7 @@ const StudentDashboard = () => {
 
     switch (activity.status) {
       case 'registration':
-        return <div>Activity registration is open. Please wait for further instructions.</div>;
+        return <Registration />;
       case 'instructions':
         return <Instructions />;
       case 'submission':
@@ -55,11 +57,6 @@ const StudentDashboard = () => {
         <div className="mb-4">
           Welcome, {user.name}
         </div>
-        {activity?.status === 'review' && (
-          <div className="mb-4 p-2 bg-blue-50 rounded">
-            <p className="text-blue-800">Current Review Round: {activity.currentRound}</p>
-          </div>
-        )}
         {renderCurrentStage()}
       </div>
     </div>

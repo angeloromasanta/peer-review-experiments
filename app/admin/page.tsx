@@ -7,6 +7,7 @@ import { doc, onSnapshot, collection, getDocs, query } from 'firebase/firestore'
 import type { Activity } from '@/types';
 import Controls from '@/components/admin/Controls';
 import Results from '@/components/admin/Results';
+import StudentStatusTable from '@/components/admin/StudentStatusTable';
 
 const ADMIN_PASSWORD = '123456'; // You can change this to any password you want
 
@@ -20,38 +21,39 @@ export default function AdminDashboard() {
     reviews: 0
   });
 
-  useEffect(() => {
-    if (!isAuthenticated) return;
+  // In app/admin/page.tsx, replace the stats useEffect with:
 
-    // Subscribe to current activity
-    const unsubActivity = onSnapshot(doc(db, 'activities', 'current'), (doc) => {
-      if (doc.exists()) {
-        setActivity({ id: doc.id, ...doc.data() } as Activity);
-      }
-    });
+useEffect(() => {
+  if (!isAuthenticated) return;
 
-    // Subscribe to stats
-    const unsubStats = onSnapshot(collection(db, 'users'), async (snapshot) => {
-      const registeredUsers = snapshot.docs.filter(doc => doc.data().registered).length;
-      
-      const submissionsQuery = query(collection(db, 'submissions'));
-      const submissionsSnap = await getDocs(submissionsQuery);
-      
-      const reviewsQuery = query(collection(db, 'reviews'));
-      const reviewsSnap = await getDocs(reviewsQuery);
+  // Subscribe to current activity
+  const unsubActivity = onSnapshot(doc(db, 'activities', 'current'), (doc) => {
+    if (doc.exists()) {
+      setActivity({ id: doc.id, ...doc.data() } as Activity);
+    }
+  });
 
-      setStats({
-        registeredUsers,
-        submissions: submissionsSnap.size,
-        reviews: reviewsSnap.size
-      });
-    });
+  // Subscribe to all collections for stats
+  const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
+    const registeredUsers = snapshot.docs.filter(doc => doc.data().registered).length;
+    setStats(prev => ({ ...prev, registeredUsers }));
+  });
 
-    return () => {
-      unsubActivity();
-      unsubStats();
-    };
-  }, [isAuthenticated]);
+  const unsubSubmissions = onSnapshot(collection(db, 'submissions'), (snapshot) => {
+    setStats(prev => ({ ...prev, submissions: snapshot.size }));
+  });
+
+  const unsubReviews = onSnapshot(collection(db, 'reviews'), (snapshot) => {
+    setStats(prev => ({ ...prev, reviews: snapshot.size }));
+  });
+
+  return () => {
+    unsubActivity();
+    unsubUsers();
+    unsubSubmissions();
+    unsubReviews();
+  };
+}, [isAuthenticated]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -132,6 +134,7 @@ export default function AdminDashboard() {
         {/* Activity Controls */}
         <Controls activity={activity} />
 
+        <StudentStatusTable activity={activity} />
         {/* Results */}
         {activity?.status === 'completed' && <Results />}
       </div>
