@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { db } from '@/lib/firebase';
-import { doc, updateDoc, setDoc, collection, getDocs, writeBatch } from 'firebase/firestore';
+import { doc, updateDoc, setDoc, collection, getDocs, getDoc, writeBatch } from 'firebase/firestore';
 import type { Activity } from '@/types';
 
 interface ControlsProps {

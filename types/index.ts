@@ -8,6 +8,7 @@ export interface User {
   role: 'student' | 'admin';
   group?: 'A' | 'B';
   submissionId?: string;
+  registered?: boolean;  // Added this line
 }
 
 export interface Activity {
