@@ -6,8 +6,7 @@ import { useAuth } from '@/components/auth/AuthContext';
 import { db } from '@/lib/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
 import type { Activity } from '@/types';
-// Fix 1: Ensure correct import paths with explicit file extensions
-import Registration from '@/components/student/Registration';
+
 import Instructions from '@/components/student/Instructions';
 import Submission from '@/components/student/Submission';
 import PeerReview from '@/components/student/PeerReview';
@@ -35,7 +34,7 @@ const StudentDashboard = () => {
 
     switch (activity.status) {
       case 'registration':
-        return <Registration />;
+        return <div>Activity registration is open. Please wait for further instructions.</div>;
       case 'instructions':
         return <Instructions />;
       case 'submission':
@@ -56,11 +55,15 @@ const StudentDashboard = () => {
         <div className="mb-4">
           Welcome, {user.name}
         </div>
+        {activity?.status === 'review' && (
+          <div className="mb-4 p-2 bg-blue-50 rounded">
+            <p className="text-blue-800">Current Review Round: {activity.currentRound}</p>
+          </div>
+        )}
         {renderCurrentStage()}
       </div>
     </div>
   );
 };
 
-// Fix 2: Add explicit default export
 export default StudentDashboard;
