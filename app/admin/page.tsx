@@ -1,15 +1,16 @@
 // app/admin/page.tsx
+
 'use client';
 
 import { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase';
-import { doc, onSnapshot, collection, getDocs, query } from 'firebase/firestore';
+import { doc, onSnapshot, collection } from 'firebase/firestore';
 import type { Activity } from '@/types';
 import Controls from '@/components/admin/Controls';
 import Results from '@/components/admin/Results';
 import StudentStatusTable from '@/components/admin/StudentStatusTable';
 
-const ADMIN_PASSWORD = '123456'; // You can change this to any password you want
+const ADMIN_PASSWORD = '123456';
 
 export default function AdminDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -21,58 +22,68 @@ export default function AdminDashboard() {
     reviews: 0
   });
 
-  // In app/admin/page.tsx, replace the stats useEffect with:
-
-useEffect(() => {
-  if (!isAuthenticated) return;
-
-  // Subscribe to current activity
-  const unsubActivity = onSnapshot(doc(db, 'activities', 'current'), (doc) => {
-    if (doc.exists()) {
-      setActivity({ id: doc.id, ...doc.data() } as Activity);
+  useEffect(() => {
+    // Check for stored authentication on component mount
+    const storedAuth = localStorage.getItem('adminAuthenticated');
+    if (storedAuth === 'true') {
+      setIsAuthenticated(true);
     }
-  });
+  }, []);
 
-  // Subscribe to all collections for stats
-  const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
-    const registeredUsers = snapshot.docs.filter(doc => doc.data().registered).length;
-    setStats(prev => ({ ...prev, registeredUsers }));
-  });
+  useEffect(() => {
+    if (!isAuthenticated) return;
 
-  const unsubSubmissions = onSnapshot(collection(db, 'submissions'), (snapshot) => {
-    setStats(prev => ({ ...prev, submissions: snapshot.size }));
-  });
+    // Subscribe to current activity
+    const unsubActivity = onSnapshot(doc(db, 'activities', 'current'), (doc) => {
+      if (doc.exists()) {
+        setActivity({ id: doc.id, ...doc.data() } as Activity);
+      }
+    }, (error) => {
+      console.error('Error in activity listener:', error);
+    });
 
-  const unsubReviews = onSnapshot(collection(db, 'reviews'), (snapshot) => {
-    setStats(prev => ({ ...prev, reviews: snapshot.size }));
-  });
+    // Subscribe to all collections for stats
+    const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
+      const registeredUsers = snapshot.docs.filter(doc => doc.data().role === 'student').length;
+      setStats(prev => ({ ...prev, registeredUsers }));
+    }, (error) => {
+      console.error('Error in users listener:', error);
+    });
 
-  return () => {
-    unsubActivity();
-    unsubUsers();
-    unsubSubmissions();
-    unsubReviews();
-  };
-}, [isAuthenticated]);
+    const unsubSubmissions = onSnapshot(collection(db, 'submissions'), (snapshot) => {
+      setStats(prev => ({ ...prev, submissions: snapshot.size }));
+    }, (error) => {
+      console.error('Error in submissions listener:', error);
+    });
+
+    const unsubReviews = onSnapshot(collection(db, 'reviews'), (snapshot) => {
+      setStats(prev => ({ ...prev, reviews: snapshot.size }));
+    }, (error) => {
+      console.error('Error in reviews listener:', error);
+    });
+
+    return () => {
+      unsubActivity();
+      unsubUsers();
+      unsubSubmissions();
+      unsubReviews();
+    };
+  }, [isAuthenticated]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (password === ADMIN_PASSWORD) {
       setIsAuthenticated(true);
-      // Save to localStorage to persist admin access
       localStorage.setItem('adminAuthenticated', 'true');
     } else {
       alert('Incorrect password');
     }
   };
 
-  // Check for stored authentication on component mount
-  useEffect(() => {
-    const storedAuth = localStorage.getItem('adminAuthenticated');
-    if (storedAuth === 'true') {
-      setIsAuthenticated(true);
-    }
-  }, []);
+  const handleLogout = () => {
+    localStorage.removeItem('adminAuthenticated');
+    setIsAuthenticated(false);
+  };
 
   if (!isAuthenticated) {
     return (
@@ -105,10 +116,7 @@ useEffect(() => {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Admin Dashboard</h1>
           <button
-            onClick={() => {
-              localStorage.removeItem('adminAuthenticated');
-              setIsAuthenticated(false);
-            }}
+            onClick={handleLogout}
             className="text-red-500 hover:text-red-600"
           >
             Logout
@@ -134,7 +142,9 @@ useEffect(() => {
         {/* Activity Controls */}
         <Controls activity={activity} />
 
+        {/* Student Status Table */}
         <StudentStatusTable activity={activity} />
+
         {/* Results */}
         {activity?.status === 'completed' && <Results />}
       </div>
