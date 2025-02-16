@@ -1,3 +1,4 @@
+
 // types/index.ts
 export type ActivityStatus = 'registration' | 'instructions' | 'submission' | 'review' | 'completed';
 

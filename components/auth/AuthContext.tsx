@@ -1,3 +1,4 @@
+// components/auth/AuthContext.tsx
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
@@ -45,9 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               console.log('No user document found');
               auth.signOut();
               setUser(null);
-              if (window.location.pathname !== '/admin') {
-                router.push('/');
-              }
+              router.push('/');
             }
             setLoading(false);
           },
@@ -55,9 +54,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             console.error('Error in user document listener:', error);
             auth.signOut();
             setUser(null);
-            if (window.location.pathname !== '/admin') {
-              router.push('/');
-            }
+            router.push('/');
             setLoading(false);
           }
         );
@@ -67,9 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           unsubscribeUser();
         }
         setUser(null);
-        if (window.location.pathname !== '/admin') {
-          router.push('/');
-        }
+        router.push('/');
         setLoading(false);
       }
     });
@@ -91,3 +86,5 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 }
 
 export const useAuth = () => useContext(AuthContext);
+
+
